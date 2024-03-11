@@ -29,14 +29,15 @@ function Form() {
   const [date, setDate] = useState(new Date());
   const [notes, setNotes] = useState("");
   const [emoji, setEmoji] = useState("");
-  const [geocodingError, setGeoCodingError] = useState('');
+  const [geocodingError, setGeoCodingError] = useState("");
 
   useEffect(
     function () {
+      if (!lat && !lng) return;
       async function fetchCityData() {
         try {
           SetIsLoadingGeoCoding(true);
-          setGeoCodingError('')
+          setGeoCodingError("");
           const res = await fetch(
             `${BASE_URL}?latitude=${lat}&longitude=${lng}`
           );
@@ -53,7 +54,7 @@ function Form() {
           setGeoCodingError(error.message);
           SetIsLoadingGeoCoding(false);
         } finally {
-          SetIsLoadingGeoCoding(false)
+          SetIsLoadingGeoCoding(false);
         }
       }
 
@@ -62,9 +63,12 @@ function Form() {
     [lat, lng]
   );
 
-    if(isLoadingGeocoding) return <Spinner/>
+  if (isLoadingGeocoding) return <Spinner />;
 
-    if(geocodingError) return <Message message={geocodingError} />
+  if (!lat && !lng)
+    return <Message message="Start by clicking somewhere on the map" />;
+
+  if (geocodingError) return <Message message={geocodingError} />;
 
   return (
     <form className={styles.form}>
