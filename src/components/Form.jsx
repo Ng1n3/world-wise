@@ -12,6 +12,7 @@ import { useUrlPosition } from "../hooks/useUrlPosition";
 import { useEffect } from "react";
 import Message from "./Message";
 import Spinner from "./Spinner";
+import { useCities } from "../contexts/CitiesContext";
 
 export function convertToEmoji(countryCode) {
   const codePoints = countryCode
@@ -25,6 +26,8 @@ const BASE_URL = "https://api.bigdatacloud.net/data/reverse-geocode-client";
 
 function Form() {
   const [lat, lng] = useUrlPosition();
+  const { createCity, isLoading } = useCities();
+  const navigage = useNavigate();
   const [isLoadingGeocoding, SetIsLoadingGeoCoding] = useState(false);
   const [cityName, setCityName] = useState("");
   const [country, setCountry] = useState("");
@@ -65,8 +68,21 @@ function Form() {
     [lat, lng]
   );
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
+    if (!cityName || !date) return;
+
+    const newCity = {
+      cityName,
+      country,
+      emoji,
+      date,
+      notes,
+      position: { lat, lng },
+    };
+
+    await createCity(newCity);
+    navigage("/app/cities");
   }
 
   if (isLoadingGeocoding) return <Spinner />;
@@ -88,7 +104,7 @@ function Form() {
         {/* <span className={styles.flag}>{emoji}</span> */}
       </div>
 
-      <div className={styles.row}>
+      <div className={`${styles.row} ${isLoading ? styles.loading : ""}`}>
         <label htmlFor="date">When did you go to {cityName}?</label>
         {/* <input
           id="date"
