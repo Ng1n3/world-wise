@@ -6,6 +6,10 @@ import styles from "./Form.module.css";
 import Button from "./Button";
 import { useNavigate } from "react-router-dom";
 import BackButton from "./BackButton";
+import { useUrlPosition } from "../hooks/useUrlPosition";
+import { useEffect } from "react";
+import Message from "./Message";
+import Spinner from "./Spinner";
 
 export function convertToEmoji(countryCode) {
   const codePoints = countryCode
@@ -15,11 +19,52 @@ export function convertToEmoji(countryCode) {
   return String.fromCodePoint(...codePoints);
 }
 
+const BASE_URL = "https://api.bigdatacloud.net/data/reverse-geocode-client";
+
 function Form() {
+  const [lat, lng] = useUrlPosition();
+  const [isLoadingGeocoding, SetIsLoadingGeoCoding] = useState(false);
   const [cityName, setCityName] = useState("");
   const [country, setCountry] = useState("");
   const [date, setDate] = useState(new Date());
   const [notes, setNotes] = useState("");
+  const [emoji, setEmoji] = useState("");
+  const [geocodingError, setGeoCodingError] = useState('');
+
+  useEffect(
+    function () {
+      async function fetchCityData() {
+        try {
+          SetIsLoadingGeoCoding(true);
+          setGeoCodingError('')
+          const res = await fetch(
+            `${BASE_URL}?latitude=${lat}&longitude=${lng}`
+          );
+          const data = await res.json();
+          if (!data.countryCode)
+            throw new Error(
+              "That does not seem to be a city, please click somewhere else 🥹"
+            );
+          console.log(data);
+          setCityName(data.city || data.locality || "");
+          setCountry(data.countryName);
+          setEmoji(convertToEmoji(data.countryCode));
+        } catch (error) {
+          setGeoCodingError(error.message);
+          SetIsLoadingGeoCoding(false);
+        } finally {
+          SetIsLoadingGeoCoding(false)
+        }
+      }
+
+      fetchCityData();
+    },
+    [lat, lng]
+  );
+
+    if(isLoadingGeocoding) return <Spinner/>
+
+    if(geocodingError) return <Message message={geocodingError} />
 
   return (
     <form className={styles.form}>
@@ -53,7 +98,7 @@ function Form() {
 
       <div className={styles.buttons}>
         <Button type="primary">Add</Button>
-        <BackButton/>
+        <BackButton />
       </div>
     </form>
   );
